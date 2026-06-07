@@ -9,36 +9,33 @@ Original file is located at
 
 #import socket module
 from socket import *
+import socket
 import sys # In order to terminate the program
 import threading
 
-serverSocket = socket(AF_INET, SOCK_STREAM)
+serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 #Prepare a sever socket
 #Fill in start
-serverSocket.bind(("", 6789))
+SERVER = socket.gethostbyname(socket.gethostname()) 
+PORT = 5500
+ADDR = (SERVER, PORT)
+serverSocket.bind(ADDR)
 serverSocket.listen(1)
 #Fill in end
 
-while True:
-  #Establish the connection
-  print('Ready to serve...')
-  #Fill in start
-  connectionSocket, addr = serverSocket.accept()
-  #Fill in end
+def handle_client(connectionSocket, addr):
   try:
-    #Fill in start
-    message = connectionSocket.recv(1024).decode()
-    #Fill in end
+    message = connectionSocket.recv(2048).decode()
     filename = message.split()[1]
     f = open(filename[1:])
-    #Fill in start
-    outputdata = f.read()
-    #Fill in end
+    outputdata = f.readlines()
 
     #Send one HTTP header line into socket
     #Fill in start
-    connectionSocket.send("HTTP/1.1 200 OK\r\n\r\n".encode())
+
+    connectionSocket.send("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n".encode()) 
+
     #Fill in end
 
     #Send the content of the requested file to the client
@@ -51,11 +48,25 @@ while True:
     #Send response message for file not found
     #Fill in start
     connectionSocket.send("HTTP/1.1 404 Not Found\r\n\r\n".encode())
+    connectionSocket.send("<html><body><h1>404 Not Found</h1></body></html>\r\n".encode())
     #Fill in end
 
     #Close client socket
     #Fill in start
     connectionSocket.close()
     #Fill in end
+
+def start():
+  print('Ready to serve...')
+  print(f"Server running on http://{SERVER}:{PORT}/HelloWorld.html")
+  while True:
+    #Establish the connection
+    print(f"[ACTIVE CONNECTIONS] {threading.active_count() - 1}")
+
+    connectionSocket, addr = serverSocket.accept()
+    thread = threading.Thread(target=handle_client, args=(connectionSocket, addr))
+    thread.start()
+    
+start()
 serverSocket.close()
 sys.exit()#Terminate the program after sending the corresponding data
